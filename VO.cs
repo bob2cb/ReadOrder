@@ -10,6 +10,8 @@ namespace ReadWordForms
         public string senderName;
         public string receiveName;
         public string imageName;
+        public string zizhi;
+        public string waixie;
     }
 
 
@@ -29,7 +31,7 @@ namespace ReadWordForms
         public string buliao;
         public string yinshua;
         public string gongyi;
-
+        public string waixiedanwei;
 
     }
 

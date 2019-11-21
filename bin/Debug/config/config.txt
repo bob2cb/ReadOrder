@@ -1,5 +1,7 @@
 {
   "senderName": "智能波:",
   "receiveName": "一年级（上册）",
-  "imageName": "[图片]"
+  "imageName": "[图片]",
+  "zizhi": "自制",
+  "waixie": "外协"
 }

@@ -21,7 +21,8 @@ namespace ReadWordForms
         public Form1()
         {
             //InitializeComponent();
-            Test();
+            //Test();
+            FastRun();
         }
 
         private void button_up_Click(object sender, EventArgs e)
@@ -47,6 +48,25 @@ namespace ReadWordForms
 
         void Test()
         {
+            string rawData = "2940";
+            Regex rg1 = new Regex(@"=\d+[\u5143]?");
+            Regex rg2 = new Regex(@"=?\d+[\u5143]");
+            if (rg1.IsMatch(rawData))
+            {
+                var matches = rg1.Matches(rawData);
+                Console.WriteLine(Regex.Replace(matches[0].ToString(), @"[^0-9]+", ""));
+            }
+            else if (rg2.IsMatch(rawData))
+            {
+                var matches = rg2.Matches(rawData);
+                Console.WriteLine(Regex.Replace(matches[0].ToString(), @"[^0-9]+", ""));
+            }
+        }
+
+
+
+        void FastRun()
+        {
             string str = File.ReadAllText(@"config\config.txt");
             this.config = JsonMapper.ToObject<Config>(str);
             ParseRawData();
@@ -64,7 +84,7 @@ namespace ReadWordForms
 
                 if (msg.Contains(this.config.imageName))
                 {
-                    this.datas.Add(new ImageData());
+                    //this.datas.Add(new ImageData());
                 }
                 else
                 {
@@ -79,6 +99,8 @@ namespace ReadWordForms
                     textData.date = GetDate(splitRawDatas);
                     textData.number = GetNumber(splitRawDatas);
                     textData.zongjia = GetZongjia(splitRawDatas);
+                    textData.danjia = GetDanjia(splitRawDatas);
+                    textData.waixiedanwei = GetWaiXieDanWei(splitRawDatas);
                     this.datas.Add(textData);
                 }
             }
@@ -130,6 +152,18 @@ namespace ReadWordForms
             return string.Empty;
         }
 
+        string GetWaiXieDanWei(List<string> rawDatas)
+        {
+            foreach (var rawData in rawDatas)
+            {
+                if (rawData.Contains(this.config.zizhi))
+                    return this.config.zizhi;
+                else if (rawData.Contains(this.config.waixie))
+                    return rawData.Replace(this.config.waixie, "");
+            }
+            return string.Empty;
+        }
+
         int GetNumber(List<string> rawDatas)
         {
             int result_int = 0;
@@ -149,15 +183,25 @@ namespace ReadWordForms
         int GetZongjia(List<string> rawDatas)
         {
             int result_int = 0;
-            string regularExpression = @"\d+[\u5143]";
-            Regex rg = new Regex(regularExpression);
+            MatchCollection matches = null;
+            string regularExpression1 = @"=?\d+[\u5143]";//*元
+            string regularExpression2 = @"=\d+[\u5143]?";//=*
+            Regex rg1 = new Regex(regularExpression1);
+            Regex rg2 = new Regex(regularExpression2);
             foreach (var rawData in rawDatas)
             {
-                if (rg.IsMatch(rawData))
+                if (rg1.IsMatch(rawData))
                 {
-                    string numberStr = Regex.Replace(rawData, @"[^0-9]+", "");
-                    return int.TryParse(numberStr, out result_int) ? result_int : 0;
+                    matches = rg1.Matches(rawData);
                 }
+                else if (rg2.IsMatch(rawData))
+                {
+                    matches = rg2.Matches(rawData);
+                }
+                if (matches == null || matches.Count == 0)
+                    continue;
+                string result_str = Regex.Replace(matches[0].ToString(), @"[^0-9]+", "");
+                return int.TryParse(result_str, out result_int) ? result_int : 0;
             }
             return result_int;
         }
