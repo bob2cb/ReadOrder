@@ -91,16 +91,24 @@ namespace ReadWordForms
                     var splitRawDatas = GetSplitedRawData(msg);
                     var textData = new TextData();
                     textData.text = msg;
+                    textData.date = GetDate(splitRawDatas);
+                    textData.waixiedanwei = GetWaiXieDanWei(splitRawDatas);
+
                     string customerName = string.Empty;
                     string productName = string.Empty;
                     GetCustomerAndProductName(splitRawDatas, out customerName, out productName);
                     textData.customer = customerName;
                     textData.product = productName;
-                    textData.date = GetDate(splitRawDatas);
-                    textData.number = GetNumber(splitRawDatas);
-                    textData.zongjia = GetZongjia(splitRawDatas);
-                    textData.danjia = GetDanjia(splitRawDatas);
-                    textData.waixiedanwei = GetWaiXieDanWei(splitRawDatas);
+
+                    int number = 0;
+                    float danjia = 0;
+                    float zongjia = 0;
+                    GetPriceAndNumber(splitRawDatas, out number, out danjia, out zongjia);
+                    textData.number = number;
+                    textData.zongjia = zongjia;
+                    textData.danjia = danjia;
+
+
                     this.datas.Add(textData);
                 }
             }
@@ -164,6 +172,62 @@ namespace ReadWordForms
             return string.Empty;
         }
 
+        void GetPriceAndNumber(List<string> rawDatas, out int number, out float danjia, out float zongjia)
+        {
+            number = 0;
+            danjia = 0;
+            zongjia = 0;
+
+            Regex rg_float = new Regex(@"\d+.\d+");
+            Regex rg_num = new Regex(@"\d+[\u4e2a]");//*个
+            //string regularExpressionX = "[*]";
+            Regex rg_zj = new Regex(@"=\d+");
+            Regex rg_djOrNum = new Regex(@"\d+=");
+            //Regex rg_x = new Regex(regularExpressionX);
+            MatchCollection matches = null;
+            string tempStr = string.Empty;
+            foreach (var rawData in rawDatas)
+            {
+                if (rg_num.IsMatch(rawData))
+                {
+                    matches = rg_num.Matches(rawData);
+                    tempStr = Regex.Replace(matches[0].ToString(), @"[^0-9]+", "");
+                    int.TryParse(tempStr, out number);
+                }
+                if (rg_zj.IsMatch(rawData))
+                {
+                    matches = rg_zj.Matches(rawData);
+                    tempStr = Regex.Replace(matches[0].ToString(), @"[^0-9]+", "");
+                    float.TryParse(tempStr, out zongjia);
+                }
+                if (rg_djOrNum.IsMatch(rawData))
+                {
+                    matches = rg_djOrNum.Matches(rawData);
+                    tempStr = matches[0].ToString();
+                    var splitedStr = tempStr.Split('*');
+                    if (splitedStr.Length == 1) //只有1个数字
+                    {
+                        if (rg_float.IsMatch(splitedStr[0]))
+                        {
+                            matches = rg_float.Matches(rawData);
+                            float.TryParse(matches[0].ToString(), out danjia);
+                        }
+                        else
+                        {
+                            tempStr = Regex.Replace(tempStr, @"[^0-9]+", "");
+                            float tempFloat = 0;
+                            float.TryParse(tempStr, out tempFloat);
+                            if (tempFloat > 10)
+                                number = (int)tempFloat;
+                            else
+                                danjia = tempFloat;
+                        }
+                    }
+                }
+            }
+        }
+
+
         int GetNumber(List<string> rawDatas)
         {
             int result_int = 0;
@@ -181,6 +245,32 @@ namespace ReadWordForms
         }
 
         int GetZongjia(List<string> rawDatas)
+        {
+            int result_int = 0;
+            MatchCollection matches = null;
+            string regularExpression1 = @"=?\d+[\u5143]";//*元
+            string regularExpression2 = @"=\d+[\u5143]?";//=*
+            Regex rg1 = new Regex(regularExpression1);
+            Regex rg2 = new Regex(regularExpression2);
+            foreach (var rawData in rawDatas)
+            {
+                if (rg1.IsMatch(rawData))
+                {
+                    matches = rg1.Matches(rawData);
+                }
+                else if (rg2.IsMatch(rawData))
+                {
+                    matches = rg2.Matches(rawData);
+                }
+                if (matches == null || matches.Count == 0)
+                    continue;
+                string result_str = Regex.Replace(matches[0].ToString(), @"[^0-9]+", "");
+                return int.TryParse(result_str, out result_int) ? result_int : 0;
+            }
+            return result_int;
+        }
+
+        int GetDanjia(List<string> rawDatas)
         {
             int result_int = 0;
             MatchCollection matches = null;
