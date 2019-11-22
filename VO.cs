@@ -15,28 +15,25 @@ namespace ReadWordForms
     }
 
 
-    public interface IData { }
-
-    public class TextData : IData
+    public class OrderData
     {
         public string text;
+        public string img;
         public string date;
         public string customer;
         public string product;
         public int number;
         public float danjia;
         public float zongjia;
+        public int wx_number;
+        public float wx_danjia;
+        public float wx_zongjia;
         public string type;
         public string guige;
         public string buliao;
         public string yinshua;
         public string gongyi;
-        public string waixiedanwei;
+        public string waixie;
 
-    }
-
-    public class ImageData : IData
-    {
-        public string text;
     }
 }

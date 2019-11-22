@@ -16,7 +16,7 @@ namespace ReadWordForms
     {
         private Config config;
         private string fullPath;
-        private List<IData> datas;
+        private List<OrderData> orderDatas;
 
         public Form1()
         {
@@ -74,44 +74,71 @@ namespace ReadWordForms
 
         void ParseRawData()
         {
-            this.datas = new List<IData>();
+            this.orderDatas = new List<OrderData>();
             var rawData = File.ReadAllText("data.txt");
-            string[] msgArray = Regex.Split(rawData, this.config.senderName);
-            foreach (var msg in msgArray)
+            var textMsgArray = GetTextMsgs(rawData);
+
+            for (int i = 0; i < textMsgArray.Count; i++)
+            {
+                var orderData = new OrderData();
+                orderData.text = textMsgArray[i];
+                var splitRawDatas = GetSplitedRawData(orderData.text);
+                //name
+                string customerName = string.Empty;
+                string productName = string.Empty;
+                GetCustomerAndProductName(splitRawDatas, out customerName, out productName);
+                orderData.customer = customerName;
+                orderData.product = productName;
+                splitRawDatas.RemoveAt(0);
+                //date
+                string date = string.Empty;
+                int index = GetDate(splitRawDatas, out date);
+                if (index != -1)
+                    splitRawDatas.RemoveAt(index);
+                //wx
+                string waixie = string.Empty;
+                int waixieIndex = GetWaiXie(splitRawDatas, out waixie);
+                orderData.waixie = waixie;
+                //wx-price
+                if (waixieIndex > -1)
+                {
+                    int wx_number = 0;
+                    float wx_danjia = 0;
+                    float wx_zongjia = 0;
+                    var wx_datas = splitRawDatas.Skip(waixieIndex).ToList();
+                    GetPriceAndNumber(wx_datas, out wx_number, out wx_danjia, out wx_zongjia);
+                    orderData.wx_number = wx_number;
+                    orderData.wx_zongjia = wx_zongjia;
+                    orderData.wx_danjia = wx_danjia;
+                }
+                //zz-price
+                int zz_number = 0;
+                float zz_danjia = 0;
+                float zz_zongjia = 0;
+                var zz_datas = waixieIndex == -1 ? splitRawDatas : splitRawDatas.Take(waixieIndex).ToList();
+                GetPriceAndNumber(zz_datas, out zz_number, out zz_danjia, out zz_zongjia);
+                orderData.number = zz_number;
+                orderData.zongjia = zz_zongjia;
+                orderData.danjia = zz_danjia;
+
+                this.orderDatas.Add(orderData);
+            }
+        }
+
+
+        List<string> GetTextMsgs(string rawData)
+        {
+            List<string> textMsgs = new List<string>();
+            var splitMsgs = Regex.Split(rawData, this.config.senderName);
+            foreach (var msg in splitMsgs)
             {
                 if (string.IsNullOrEmpty(msg))
                     continue;
-
                 if (msg.Contains(this.config.imageName))
-                {
-                    //this.datas.Add(new ImageData());
-                }
-                else
-                {
-                    var splitRawDatas = GetSplitedRawData(msg);
-                    var textData = new TextData();
-                    textData.text = msg;
-                    textData.date = GetDate(splitRawDatas);
-                    textData.waixiedanwei = GetWaiXieDanWei(splitRawDatas);
-
-                    string customerName = string.Empty;
-                    string productName = string.Empty;
-                    GetCustomerAndProductName(splitRawDatas, out customerName, out productName);
-                    textData.customer = customerName;
-                    textData.product = productName;
-
-                    int number = 0;
-                    float danjia = 0;
-                    float zongjia = 0;
-                    GetPriceAndNumber(splitRawDatas, out number, out danjia, out zongjia);
-                    textData.number = number;
-                    textData.zongjia = zongjia;
-                    textData.danjia = danjia;
-
-
-                    this.datas.Add(textData);
-                }
+                    continue;
+                textMsgs.Add(msg);
             }
+            return textMsgs;
         }
 
         List<string> GetSplitedRawData(string rawData)
@@ -135,29 +162,46 @@ namespace ReadWordForms
         {
             customerName = string.Empty;
             productName = string.Empty;
-            foreach (var rawData in rawDatas)
+            string[] datas = rawDatas[0].Split('-');
+            if (datas.Length == 1)
             {
-                string[] strs = rawData.Split('-');
-                if (strs.Length == 2)
-                {
-                    customerName = strs[0];
-                    productName = strs[1];
-                    return;
-                }
+                productName = datas[0];
+            }
+            else
+            {
+                customerName = datas[0];
+                productName = datas[1];
             }
         }
 
-        string GetDate(List<string> rawDatas)
+        int GetDate(List<string> rawDatas,out string date)
         {
+            date = string.Empty;
             string regularExpression = @"^((10|11|12|[0]?\d).[0-3]?\d)$";//12.30,1.05,1.5,01.5
             Regex rg = new Regex(regularExpression);
-            foreach (var rawData in rawDatas)
+            for (int i = 0; i < rawDatas.Count; i++)
             {
-                var matches = rg.Matches(rawData);
-                if (matches.Count > 0)
-                    return matches[0].ToString();
+                var matches = rg.Matches(rawDatas[i]);
+                if (matches.Count == 0)
+                    continue;
+                date = matches[0].ToString();
+                return i;
             }
-            return string.Empty;
+            return -1;
+        }
+
+
+        int GetWaiXie(List<string> rawDatas,out string waixie)
+        {
+            waixie = this.config.zizhi;
+            for (int i = 0; i < rawDatas.Count; i++)
+            {
+                if (!rawDatas[i].Contains(this.config.waixie))
+                    continue;
+                waixie = rawDatas[i].Replace(this.config.waixie, "");
+                return i;
+            }
+            return -1;
         }
 
         string GetWaiXieDanWei(List<string> rawDatas)
