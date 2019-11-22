@@ -48,22 +48,21 @@ namespace ReadWordForms
 
         void Test()
         {
-            string rawData = "2940";
-            Regex rg1 = new Regex(@"=\d+[\u5143]?");
-            Regex rg2 = new Regex(@"=?\d+[\u5143]");
-            if (rg1.IsMatch(rawData))
-            {
-                var matches = rg1.Matches(rawData);
-                Console.WriteLine(Regex.Replace(matches[0].ToString(), @"[^0-9]+", ""));
-            }
-            else if (rg2.IsMatch(rawData))
-            {
-                var matches = rg2.Matches(rawData);
-                Console.WriteLine(Regex.Replace(matches[0].ToString(), @"[^0-9]+", ""));
-            }
+            //string rawData = "=17400X";
+            //Regex rg1 = new Regex(@"\d+?[.]?\d+?");
+            ////Regex rg2 = new Regex("[0-9]+([.]{1}[0-9]+){0,1}$");
+            //Regex rg2 = new Regex(@"\d+[.]\d+");
+            //if (rg2.IsMatch(rawData))
+            //{
+            //    var matches = rg2.Matches(rawData);
+            //    Console.WriteLine(matches[0].ToString());
+            //}
+            //else if (rg2.IsMatch(rawData))
+            //{
+            //    var matches = rg2.Matches(rawData);
+            //    Console.WriteLine(Regex.Replace(matches[0].ToString(), @"[^0-9]+", ""));
+            //}
         }
-
-
 
         void FastRun()
         {
@@ -125,7 +124,6 @@ namespace ReadWordForms
             }
         }
 
-
         List<string> GetTextMsgs(string rawData)
         {
             List<string> textMsgs = new List<string>();
@@ -177,11 +175,9 @@ namespace ReadWordForms
         int GetDate(List<string> rawDatas,out string date)
         {
             date = string.Empty;
-            string regularExpression = @"^((10|11|12|[0]?\d).[0-3]?\d)$";//12.30,1.05,1.5,01.5
-            Regex rg = new Regex(regularExpression);
             for (int i = 0; i < rawDatas.Count; i++)
             {
-                var matches = rg.Matches(rawDatas[i]);
+                var matches = RegexDefine.isDate.Matches(rawDatas[i]);
                 if (matches.Count == 0)
                     continue;
                 date = matches[0].ToString();
@@ -189,7 +185,6 @@ namespace ReadWordForms
             }
             return -1;
         }
-
 
         int GetWaiXie(List<string> rawDatas,out string waixie)
         {
@@ -204,140 +199,138 @@ namespace ReadWordForms
             return -1;
         }
 
-        string GetWaiXieDanWei(List<string> rawDatas)
-        {
-            foreach (var rawData in rawDatas)
-            {
-                if (rawData.Contains(this.config.zizhi))
-                    return this.config.zizhi;
-                else if (rawData.Contains(this.config.waixie))
-                    return rawData.Replace(this.config.waixie, "");
-            }
-            return string.Empty;
-        }
-
+        #region PriceAndNumber
         void GetPriceAndNumber(List<string> rawDatas, out int number, out float danjia, out float zongjia)
         {
             number = 0;
             danjia = 0;
             zongjia = 0;
-
-            Regex rg_float = new Regex(@"\d+.\d+");
-            Regex rg_num = new Regex(@"\d+[\u4e2a]");//*个
-            //string regularExpressionX = "[*]";
-            Regex rg_zj = new Regex(@"=\d+");
-            Regex rg_djOrNum = new Regex(@"\d+=");
-            //Regex rg_x = new Regex(regularExpressionX);
             MatchCollection matches = null;
             string tempStr = string.Empty;
             foreach (var rawData in rawDatas)
             {
-                if (rg_num.IsMatch(rawData))
+                if (IsChWithoutGeOrYuna(rawData))
+                    continue;
+
+                if (IsPerfectEquation(rawData))
                 {
-                    matches = rg_num.Matches(rawData);
-                    tempStr = Regex.Replace(matches[0].ToString(), @"[^0-9]+", "");
+                    GetPriceAndNumberByOneString(rawData, ref number, ref danjia, ref zongjia);
+                    return;
+                }
+
+                if (number == 0 && RegexDefine.containsGe.IsMatch(rawData))
+                {
+                    matches = RegexDefine.containsGe.Matches(rawData);
+                    tempStr = GetIntOrFloatString(matches[0].ToString());
                     int.TryParse(tempStr, out number);
                 }
-                if (rg_zj.IsMatch(rawData))
+                if (danjia == 0 && RegexDefine.containsPerge.IsMatch(rawData))
                 {
-                    matches = rg_zj.Matches(rawData);
-                    tempStr = Regex.Replace(matches[0].ToString(), @"[^0-9]+", "");
+                    matches = RegexDefine.containsPerge.Matches(rawData);
+                    tempStr = GetIntOrFloatString(matches[0].ToString());
+                    float.TryParse(tempStr, out danjia);
+                }
+                if (zongjia == 0 && RegexDefine.containsEqualInLeft.IsMatch(rawData))
+                {
+                    matches = RegexDefine.containsEqualInLeft.Matches(rawData);
+                    tempStr = GetIntOrFloatString(matches[0].ToString());
                     float.TryParse(tempStr, out zongjia);
                 }
-                if (rg_djOrNum.IsMatch(rawData))
+                if ((danjia == 0 || number == 0) && RegexDefine.containsEqualInRight.IsMatch(rawData))
                 {
-                    matches = rg_djOrNum.Matches(rawData);
-                    tempStr = matches[0].ToString();
-                    var splitedStr = tempStr.Split('*');
-                    if (splitedStr.Length == 1) //只有1个数字
-                    {
-                        if (rg_float.IsMatch(splitedStr[0]))
-                        {
-                            matches = rg_float.Matches(rawData);
-                            float.TryParse(matches[0].ToString(), out danjia);
-                        }
-                        else
-                        {
-                            tempStr = Regex.Replace(tempStr, @"[^0-9]+", "");
-                            float tempFloat = 0;
-                            float.TryParse(tempStr, out tempFloat);
-                            if (tempFloat > 10)
-                                number = (int)tempFloat;
-                            else
-                                danjia = tempFloat;
-                        }
-                    }
+                    matches = RegexDefine.containsEqualInRight.Matches(rawData);
+                    SetValueToDanjiaOrNumber(matches[0].ToString(),ref danjia, ref number);
+                }
+                if ((danjia == 0 || number == 0) && rawData.Contains('*'))
+                {
+                    var splitedStr = rawData.Split('*');
+                    foreach (var str in splitedStr)
+                        SetValueToDanjiaOrNumber(str, ref danjia, ref number);
+                }
+                if ((danjia == 0 || zongjia == 0) && RegexDefine.containsYuan.IsMatch(rawData))
+                {
+                    matches = RegexDefine.containsYuan.Matches(rawData);
+                    SetValueToDanjiaOrZongjia(matches[0].ToString(), ref danjia, ref zongjia);
+                }
+                if ((danjia == 0 || zongjia == 0) && RegexDefine.containsMulit.IsMatch(rawData))
+                {
+                    matches = RegexDefine.containsMulit.Matches(rawData);
+                    SetValueToDanjiaOrZongjia(matches[0].ToString(), ref danjia, ref zongjia);
                 }
             }
         }
-
-
-        int GetNumber(List<string> rawDatas)
+        bool IsChWithoutGeOrYuna(string str)
         {
-            int result_int = 0;
-            string regularExpression = @"\d+[\u4e2a]";
-            Regex rg = new Regex(regularExpression);
-            foreach (var rawData in rawDatas)
+            return RegexDefine.isCh.IsMatch(str) && !RegexDefine.containsGe.IsMatch(str) && !RegexDefine.containsYuan.IsMatch(str);
+        }
+        bool IsPerfectEquation(string str)
+        {
+            List<string> results = new List<string>();
+            var splitedArrWithEqual = str.Split('=');
+            foreach (var splitedWithEqual in splitedArrWithEqual)
             {
-                if (rg.IsMatch(rawData))
+                var splitedArrWithX = splitedWithEqual.Split('*');
+                foreach (var splitedWithX in splitedArrWithX)
                 {
-                    string numberStr = Regex.Replace(rawData, @"[^0-9]+", "");
-                    return int.TryParse(numberStr, out result_int) ? result_int : 0;
+                    if (!string.IsNullOrEmpty(splitedWithX))
+                        results.Add(splitedWithX);
                 }
             }
-            return result_int;
+            return results.Count == 3;
+        }
+        void GetPriceAndNumberByOneString(string rawData, ref int number, ref float danjia, ref float zongjia)
+        {
+            var matches = RegexDefine.containsEqualInLeft.Matches(rawData);
+            string equalRightStr = matches[0].ToString();
+            var tempStr = GetIntOrFloatString(equalRightStr);
+            float.TryParse(tempStr, out zongjia);
+
+            tempStr = rawData.Substring(0, rawData.IndexOf(equalRightStr));
+            var danjiaAndNumber = tempStr.Split('*');
+            var shuziStr1 = GetIntOrFloatString(danjiaAndNumber[0]);
+            var shuziStr2 = GetIntOrFloatString(danjiaAndNumber[1]);
+            float shuzi1 = 0;
+            float shuzi2 = 0;
+            float.TryParse(shuziStr1, out shuzi1);
+            float.TryParse(shuziStr2, out shuzi2);
+            if (shuzi1 > 10)
+            {
+                number = (int)shuzi1;
+                danjia = shuzi2;
+            }
+            else
+            {
+                number = (int)shuzi2;
+                danjia = shuzi1;
+            }
+        }
+        string GetIntOrFloatString(string rawData)
+        {
+            var matches = RegexDefine.isIntOrfloat.Matches(rawData);
+            return matches.Count > 0 ? matches[0].ToString() : string.Empty;
         }
 
-        int GetZongjia(List<string> rawDatas)
+        void SetValueToDanjiaOrNumber(string rawData, ref float danjia, ref int number)
         {
-            int result_int = 0;
-            MatchCollection matches = null;
-            string regularExpression1 = @"=?\d+[\u5143]";//*元
-            string regularExpression2 = @"=\d+[\u5143]?";//=*
-            Regex rg1 = new Regex(regularExpression1);
-            Regex rg2 = new Regex(regularExpression2);
-            foreach (var rawData in rawDatas)
-            {
-                if (rg1.IsMatch(rawData))
-                {
-                    matches = rg1.Matches(rawData);
-                }
-                else if (rg2.IsMatch(rawData))
-                {
-                    matches = rg2.Matches(rawData);
-                }
-                if (matches == null || matches.Count == 0)
-                    continue;
-                string result_str = Regex.Replace(matches[0].ToString(), @"[^0-9]+", "");
-                return int.TryParse(result_str, out result_int) ? result_int : 0;
-            }
-            return result_int;
+            float tempFloat = 0;
+            var tempStr = GetIntOrFloatString(rawData);
+            float.TryParse(tempStr, out tempFloat);
+            if (RegexDefine.isFloat.IsMatch(rawData) || tempFloat < 10)
+                danjia = tempFloat;
+            else
+                number = (int)tempFloat;
         }
-
-        int GetDanjia(List<string> rawDatas)
+        void SetValueToDanjiaOrZongjia(string rawData, ref float danjia, ref float zongjia)
         {
-            int result_int = 0;
-            MatchCollection matches = null;
-            string regularExpression1 = @"=?\d+[\u5143]";//*元
-            string regularExpression2 = @"=\d+[\u5143]?";//=*
-            Regex rg1 = new Regex(regularExpression1);
-            Regex rg2 = new Regex(regularExpression2);
-            foreach (var rawData in rawDatas)
-            {
-                if (rg1.IsMatch(rawData))
-                {
-                    matches = rg1.Matches(rawData);
-                }
-                else if (rg2.IsMatch(rawData))
-                {
-                    matches = rg2.Matches(rawData);
-                }
-                if (matches == null || matches.Count == 0)
-                    continue;
-                string result_str = Regex.Replace(matches[0].ToString(), @"[^0-9]+", "");
-                return int.TryParse(result_str, out result_int) ? result_int : 0;
-            }
-            return result_int;
+            float tempFloat = 0;
+            var tempStr = GetIntOrFloatString(rawData);
+            //var tempStr = Regex.Replace(rawData, @"[^0-9]+", "");
+            float.TryParse(tempStr, out tempFloat);
+            if (tempFloat < 10)
+                danjia = tempFloat;
+            else
+                zongjia = tempFloat;
         }
+        #endregion
     }
 }
