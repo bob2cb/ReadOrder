@@ -48,15 +48,16 @@ namespace ReadWordForms
 
         void Test()
         {
-            //string rawData = "=17400X";
-            //Regex rg1 = new Regex(@"\d+?[.]?\d+?");
-            ////Regex rg2 = new Regex("[0-9]+([.]{1}[0-9]+){0,1}$");
+            string rawData = "11.30";
+            Regex rg1 = new Regex(@"^((10|11|12|[0]?\d)[.][0-3]?\d)$");
+            //Regex rg2 = new Regex("[0-9]+([.]{1}[0-9]+){0,1}$");
             //Regex rg2 = new Regex(@"\d+[.]\d+");
-            //if (rg2.IsMatch(rawData))
-            //{
-            //    var matches = rg2.Matches(rawData);
-            //    Console.WriteLine(matches[0].ToString());
-            //}
+            Console.WriteLine(rg1.IsMatch(rawData));
+            if (rg1.IsMatch(rawData))
+            {
+                var matches = rg1.Matches(rawData);
+                Console.WriteLine(matches[0].ToString());
+            }
             //else if (rg2.IsMatch(rawData))
             //{
             //    var matches = rg2.Matches(rawData);
@@ -92,6 +93,7 @@ namespace ReadWordForms
                 //date
                 string date = string.Empty;
                 int index = GetDate(splitRawDatas, out date);
+                orderData.date = date;
                 if (index != -1)
                     splitRawDatas.RemoveAt(index);
                 //wx
@@ -104,7 +106,7 @@ namespace ReadWordForms
                     int wx_number = 0;
                     float wx_danjia = 0;
                     float wx_zongjia = 0;
-                    var wx_datas = splitRawDatas.Skip(waixieIndex).ToList();
+                    var wx_datas = splitRawDatas.Skip(waixieIndex + 1).ToList();
                     GetPriceAndNumber(wx_datas, out wx_number, out wx_danjia, out wx_zongjia);
                     orderData.wx_number = wx_number;
                     orderData.wx_zongjia = wx_zongjia;
@@ -236,29 +238,50 @@ namespace ReadWordForms
                     tempStr = GetIntOrFloatString(matches[0].ToString());
                     float.TryParse(tempStr, out zongjia);
                 }
+                if (HasValueWithNumberAndPrice(number, danjia, zongjia))
+                    return;
                 if ((danjia == 0 || number == 0) && RegexDefine.containsEqualInRight.IsMatch(rawData))
                 {
                     matches = RegexDefine.containsEqualInRight.Matches(rawData);
                     SetValueToDanjiaOrNumber(matches[0].ToString(),ref danjia, ref number);
                 }
+                if (HasValueWithNumberAndPrice(number, danjia, zongjia))
+                    return;
                 if ((danjia == 0 || number == 0) && rawData.Contains('*'))
                 {
                     var splitedStr = rawData.Split('*');
                     foreach (var str in splitedStr)
                         SetValueToDanjiaOrNumber(str, ref danjia, ref number);
                 }
+                if (HasValueWithNumberAndPrice(number, danjia, zongjia))
+                    return;
                 if ((danjia == 0 || zongjia == 0) && RegexDefine.containsYuan.IsMatch(rawData))
                 {
                     matches = RegexDefine.containsYuan.Matches(rawData);
                     SetValueToDanjiaOrZongjia(matches[0].ToString(), ref danjia, ref zongjia);
                 }
-                if ((danjia == 0 || zongjia == 0) && RegexDefine.containsMulit.IsMatch(rawData))
+                if (HasValueWithNumberAndPrice(number, danjia, zongjia))
+                    return;
+                //if ((danjia == 0 || zongjia == 0) && RegexDefine.containsMulit.IsMatch(rawData))
+                //{
+                //    matches = RegexDefine.containsMulit.Matches(rawData);
+                //    SetValueToDanjiaOrZongjia(matches[0].ToString(), ref danjia, ref zongjia);
+                //}
+                //if (HasValueWithNumberAndPrice(number, danjia, zongjia))
+                //    return;
+                if ((zongjia == 0) && RegexDefine.isIntOrfloat.IsMatch(rawData) && !RegexDefine.isDate.IsMatch(rawData))
                 {
-                    matches = RegexDefine.containsMulit.Matches(rawData);
-                    SetValueToDanjiaOrZongjia(matches[0].ToString(), ref danjia, ref zongjia);
+                    matches = RegexDefine.isIntOrfloat.Matches(rawData);
+                    tempStr = GetIntOrFloatString(matches[0].ToString());
+                    float.TryParse(tempStr, out zongjia);
                 }
             }
         }
+        bool HasValueWithNumberAndPrice(int number, float danjia, float zongjia)
+        {
+            return number > 0 && danjia > 0 && zongjia > 0;
+        }
+
         bool IsChWithoutGeOrYuna(string str)
         {
             return RegexDefine.isCh.IsMatch(str) && !RegexDefine.containsGe.IsMatch(str) && !RegexDefine.containsYuan.IsMatch(str);
@@ -306,7 +329,7 @@ namespace ReadWordForms
         }
         string GetIntOrFloatString(string rawData)
         {
-            var matches = RegexDefine.isIntOrfloat.Matches(rawData);
+            var matches = RegexDefine.containsIntOrfloat.Matches(rawData);
             return matches.Count > 0 ? matches[0].ToString() : string.Empty;
         }
 
