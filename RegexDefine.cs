@@ -18,6 +18,11 @@ namespace ReadWordForms
         public static Regex containsMulit = new Regex(@"[*]");//*
         public static Regex containsEqualInLeft = new Regex(@"=\d+[.]?\d+?");//=*
         public static Regex containsEqualInRight = new Regex(@"\d+?[.]?\d+=");//*=
-        public static Regex isDate = new Regex(@"^((10|11|12|[0]?\d)[.][0-3]?\d)$");//12.30,1.05,1.5,01.5
+        public static Regex isDate = new Regex(@"(10|11|12|[0]?\d)[.]\s{0,2}[0-3]?\d");//12.30,1.05,1.5,01.5
+
+        public static Regex containsWidth = new Regex(@"[\u5bbd]\d+");//宽*
+        public static Regex containsHeight = new Regex(@"[\u9ad8]\d+");//高*
+        public static Regex containsSide = new Regex(@"[\u4fa7]\d+");//侧*
+        public static Regex containsG = new Regex(@"\d+[\u514b]");//*克
     }
 }
