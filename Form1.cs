@@ -195,6 +195,8 @@ namespace ReadWordForms
                 orderData.gongyi = GetGongyi(orderData.img);
                 //yinshua
                 orderData.yinshua = GetYinshua(splitImgDatas, orderData.buliao, orderData.gongyi);
+                //tishou
+                orderData.buliao = AddTishouToBuliao(splitImgDatas, orderData.buliao);
                 this.orderDatas.Add(orderData);
                 if (this.progressBar != null)
                     this.progressBar.Value = (int)(this.orderDatas.Count / (float)textMsgArray.Count * 100);
@@ -518,6 +520,17 @@ namespace ReadWordForms
             }
             return string.Empty;
         }
+        string AddTishouToBuliao(List<string> rawDatas, string buliao)
+        {
+            foreach (var rawData in rawDatas)
+            {
+                var tishouIndex = rawData.IndexOf(this.config.tishou);
+                if (tishouIndex > -1)
+                    return $"{buliao} {rawData.Substring(tishouIndex, rawData.Length - tishouIndex)}";
+            }
+            return buliao;
+        }
+
         string GetGongyi(string rawData)
         {
             foreach (var gongyi in this.config.gongyi)

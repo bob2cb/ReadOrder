@@ -19,6 +19,9 @@
   "type": {
     "无纺布": "无纺布袋"
   },
+  "tishou": "提手",
+  "wufangbudai": "无纺布袋",
+  "year": "2019",
   "sizeCorrect": {
     "CT": "0",
     "(T": "0"
