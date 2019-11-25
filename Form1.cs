@@ -5,10 +5,13 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using LitJson;
+using NPOI;
+using NPOI.SS.UserModel;
 
 namespace ReadWordForms
 {
@@ -93,6 +96,7 @@ namespace ReadWordForms
             this.imgData = File.ReadAllText("data_img.txt");
             ParseConfigData();
             ParseRawData();
+            ExportExcelData();
         }
 
         void ParseConfigData()
@@ -180,7 +184,7 @@ namespace ReadWordForms
                 orderData.yinshua = GetYinshua(splitImgDatas, orderData.gongyi);
                 this.orderDatas.Add(orderData);
             }
-            MessageBox.Show($"成功解析{this.orderDatas.Count}条数据！！");
+            //MessageBox.Show($"成功解析{this.orderDatas.Count}条数据！！");
         }
 
         #region Text
@@ -514,5 +518,60 @@ namespace ReadWordForms
             return string.Empty;
         }
         #endregion
+
+        #region Excel
+        void ExportExcelData()
+        {
+            string importExcelPath = @"config\order.xlsx";
+            string exportExcelPath = @"order_result.xlsx";
+            IWorkbook workbook = WorkbookFactory.Create(importExcelPath);
+            ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
+            for (int i = 0; i < this.orderDatas.Count; i++)
+            {
+                int propertiesIndex = -3;
+                var orderData = this.orderDatas[i];
+                Type t = orderData.GetType();
+                IRow row = (IRow)sheet.GetRow(i + 1);//获取第i+1行
+                foreach (PropertyInfo pi in t.GetProperties())
+                {
+                    propertiesIndex++;
+                    if (propertiesIndex >= 0)
+                        SetCellValue(row, propertiesIndex, pi.GetValue(orderData, null));
+                }
+                //    SetCellValue(row, 0, orderData.orderDate);
+                //SetCellValue(row, 1, orderData.customer);
+                //SetCellValue(row, 2, orderData.product);
+                //SetCellValue(row, 3, orderData.type);
+                //SetCellValue(row, 4, orderData.size);
+                //SetCellValue(row, 5, orderData.buliao);
+                //SetCellValue(row, 6, orderData.yinshua);
+                //SetCellValue(row, 7, orderData.gongyi);
+                //SetCellValue(row, 8, orderData.number);
+                //SetCellValue(row, 9, orderData.danjia);
+                //SetCellValue(row, 10, orderData.zongjia);
+                //row.CreateCell(0).SetCellValue("test");
+            }
+            //导出excel
+            FileStream fs = new FileStream(exportExcelPath, FileMode.Create, FileAccess.ReadWrite);
+            workbook.Write(fs);
+            fs.Close();
+        }
+        void SetCellValue(IRow row, int cell, object vaule)
+        {
+            if (vaule is string)
+            {
+                var str = vaule.ToString();
+                if (!string.IsNullOrEmpty(str))
+                    row.CreateCell(cell).SetCellValue(str);
+            }else if (vaule is float)
+            {
+                var f = (float)vaule;
+                if (f > 0)
+                    row.CreateCell(cell).SetCellValue(f);
+            }
+        }
+        #endregion
     }
 }
+
+
