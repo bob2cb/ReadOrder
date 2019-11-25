@@ -21,6 +21,7 @@ namespace ReadWordForms
         private string textData;
         private string imgData;
         private List<OrderData> orderDatas;
+        private string dataPath = string.Empty;
 
         public Form1()
         {
@@ -58,6 +59,7 @@ namespace ReadWordForms
             {
                 this.textBox_text.Text = Path.GetFileName(fileDialog.FileName);
                 this.textData = File.ReadAllText(Path.GetFullPath(fileDialog.FileName));
+                this.dataPath = Path.GetDirectoryName(fileDialog.FileName);
             }
         }
 
@@ -86,14 +88,21 @@ namespace ReadWordForms
                 MessageBox.Show($"错误！！没有文字数据");
                 return;
             }
-            ParseConfigData();
-            ParseRawData();
+            DisableAllControls();
+            Execute();
+            EnableAllControls();
         }
 
         void FastRun()
         {
             this.textData = File.ReadAllText("data.txt");
             this.imgData = File.ReadAllText("data_img.txt");
+            Execute();
+        }
+
+        void Execute()
+        {
+            ConsoleToLable("");
             ParseConfigData();
             ParseRawData();
             ExportExcelData();
@@ -101,23 +110,31 @@ namespace ReadWordForms
 
         void ParseConfigData()
         {
+            ConsoleToLable("开始解析配置文件");
             string str = File.ReadAllText(@"config\config.txt");
+            if (string.IsNullOrEmpty(str))
+            {
+                MessageBox.Show("配置文件没有数据");
+                return;
+            }
             this.config = JsonMapper.ToObject<Config>(str);
         }
 
         void ParseRawData()
         {
+            ConsoleToLable("开始解析订单数据");
             this.orderDatas = new List<OrderData>();
             var textMsgArray = GetTextMsgs(textData);
             var imgMsgArray = GetImageMsgs(imgData);
             if (textMsgArray.Count != imgMsgArray.Count)
             {
-                MessageBox.Show($"错误！！文字{textMsgArray.Count}条,图片{imgMsgArray.Count}张");
+                MessageBox.Show($"数据不匹配！！文字{textMsgArray.Count}条,图片{imgMsgArray.Count}张");
                 return;
             }
 
             for (int i = 0; i < textMsgArray.Count; i++)
             {
+                ConsoleToLable($"正在解析{this.orderDatas.Count}/{textMsgArray.Count}数据！！");
                 var orderData = new OrderData();
                 orderData.text = textMsgArray[i];
                 orderData.img = imgMsgArray[i];
@@ -522,8 +539,9 @@ namespace ReadWordForms
         #region Excel
         void ExportExcelData()
         {
+            ConsoleToLable("开始导出Excel");
             string importExcelPath = @"config\order.xlsx";
-            string exportExcelPath = @"order_result.xlsx";
+            string exportExcelPath = Path.Combine(this.dataPath, @"order_result.xlsx");
             IWorkbook workbook = WorkbookFactory.Create(importExcelPath);
             ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
             for (int i = 0; i < this.orderDatas.Count; i++)
@@ -538,23 +556,12 @@ namespace ReadWordForms
                     if (propertiesIndex >= 0)
                         SetCellValue(row, propertiesIndex, pi.GetValue(orderData, null));
                 }
-                //    SetCellValue(row, 0, orderData.orderDate);
-                //SetCellValue(row, 1, orderData.customer);
-                //SetCellValue(row, 2, orderData.product);
-                //SetCellValue(row, 3, orderData.type);
-                //SetCellValue(row, 4, orderData.size);
-                //SetCellValue(row, 5, orderData.buliao);
-                //SetCellValue(row, 6, orderData.yinshua);
-                //SetCellValue(row, 7, orderData.gongyi);
-                //SetCellValue(row, 8, orderData.number);
-                //SetCellValue(row, 9, orderData.danjia);
-                //SetCellValue(row, 10, orderData.zongjia);
-                //row.CreateCell(0).SetCellValue("test");
             }
             //导出excel
             FileStream fs = new FileStream(exportExcelPath, FileMode.Create, FileAccess.ReadWrite);
             workbook.Write(fs);
             fs.Close();
+            ConsoleToLable($"导出{exportExcelPath}完成");
         }
         void SetCellValue(IRow row, int cell, object vaule)
         {
@@ -568,6 +575,33 @@ namespace ReadWordForms
                 var f = (float)vaule;
                 if (f > 0)
                     row.CreateCell(cell).SetCellValue(f);
+            }
+        }
+        #endregion
+
+        #region Components
+
+        void ConsoleToLable(string str)
+        {
+            if (this.label_console != null)
+                this.label_console.Text = str;
+            else
+                Console.WriteLine(str);
+        }
+
+        void DisableAllControls()
+        {
+            foreach (Control ctl in Controls)
+            {
+                ctl.Enabled = false;
+            }
+        }
+
+        void EnableAllControls()
+        {
+            foreach (Control ctl in Controls)
+            {
+                ctl.Enabled = true;
             }
         }
         #endregion
