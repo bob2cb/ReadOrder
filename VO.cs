@@ -17,6 +17,7 @@ namespace ReadWordForms
         public string wufangbudai;
         public string year;
         public Dictionary<string,string> type;
+        public Dictionary<string, string> sizeCorrect;
     }
 
 

@@ -27,7 +27,7 @@ namespace ReadWordForms
         {
             InitializeComponent();
             //Test();
-            FastRun();
+            //FastRun();
         }
 
         void Test()
@@ -470,6 +470,7 @@ namespace ReadWordForms
                     continue;
                 if (!RegexDefine.containsSide.IsMatch(rawData))
                     continue;
+                rawData = CorrectSizeData(rawData);
                 matches = RegexDefine.containsWidth.Matches(rawData);
                 string sizeWidth = matches[0].ToString();
                 matches = RegexDefine.containsHeight.Matches(rawData);
@@ -480,6 +481,12 @@ namespace ReadWordForms
                 return i;
             }
             return -1;
+        }
+        string CorrectSizeData(string rawData)
+        {
+            foreach (var sizeCorrect in this.config.sizeCorrect)
+                rawData = rawData.Replace(sizeCorrect.Key, sizeCorrect.Value);
+            return rawData;
         }
         string GetDeliveryDate(string rawData)
         {
