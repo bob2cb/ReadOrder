@@ -25,7 +25,7 @@ namespace ReadWordForms
 
         public Form1()
         {
-            //InitializeComponent();
+            InitializeComponent();
             //Test();
             FastRun();
         }
@@ -66,7 +66,7 @@ namespace ReadWordForms
         private void button_img_Click(object sender, EventArgs e)
         {
             OpenFileDialog fileDialog = new OpenFileDialog();
-            fileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            fileDialog.InitialDirectory = string.IsNullOrEmpty(this.dataPath)?Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory): this.dataPath;
             fileDialog.Filter = "文本文件|*.txt";
             fileDialog.RestoreDirectory = false;    //若为false，则打开对话框后为上次的目录。若为true，则为初始目录
             if (fileDialog.ShowDialog() == DialogResult.OK)
@@ -187,19 +187,18 @@ namespace ReadWordForms
                 orderData.size = size;
                 if (sizeIndex != -1)
                     splitImgDatas.RemoveAt(sizeIndex);
-                //buliao
-                string buliao = string.Empty;
-                int buliaoIndex = GetBuliao(splitImgDatas, out buliao);
-                orderData.buliao = buliao;
-                if (buliaoIndex != -1)
-                    splitImgDatas.RemoveAt(buliaoIndex);
                 //type
                 orderData.type = GetType(orderData.img);
+                //buliao
+                orderData.buliao = GetBuliao(splitImgDatas, orderData.type);
                 //gongyi
                 orderData.gongyi = GetGongyi(orderData.img);
                 //yinshua
-                orderData.yinshua = GetYinshua(splitImgDatas, orderData.gongyi);
+                orderData.yinshua = GetYinshua(splitImgDatas, orderData.buliao, orderData.gongyi);
                 this.orderDatas.Add(orderData);
+                if (this.progressBar != null)
+                    this.progressBar.Value = (int)(this.orderDatas.Count / (float)textMsgArray.Count * 100);
+                System.Threading.Thread.Sleep(100);
             }
             //MessageBox.Show($"成功解析{this.orderDatas.Count}条数据！！");
         }
@@ -207,8 +206,9 @@ namespace ReadWordForms
         #region Text
         List<string> GetTextMsgs(string rawData)
         {
+            string senderName = GetSenderName(rawData);
             List<string> textMsgs = new List<string>();
-            var splitMsgs = Regex.Split(rawData, this.config.senderName);
+            var splitMsgs = Regex.Split(rawData, senderName);
             foreach (var msg in splitMsgs)
             {
                 if (string.IsNullOrEmpty(msg))
@@ -219,7 +219,15 @@ namespace ReadWordForms
             }
             return textMsgs;
         }
-
+        string GetSenderName(string rawData)
+        {
+            foreach (var sendName in this.config.senderName)
+            {
+                if (rawData.Contains(sendName))
+                    return sendName;
+            }
+            return rawData;
+        }
         List<string> GetSplitedDataByEnterAndSpace(string rawData)
         {
             List<string> result = new List<string>();
@@ -262,6 +270,7 @@ namespace ReadWordForms
                 if (matches.Count == 0)
                     continue;
                 date = matches[0].ToString().Replace(" ", "");
+                date = $"{this.config.year}.{date}";
                 return i;
             }
             return -1;
@@ -474,8 +483,11 @@ namespace ReadWordForms
         }
         string GetDeliveryDate(string rawData)
         {
+            string date = string.Empty;
             var matches = RegexDefine.isDate.Matches(rawData);
-            return matches.Count != 0 ? matches[0].ToString().Replace(" ", "") : string.Empty;
+            if (matches.Count > 0)
+                date = $"{this.config.year}.{matches[0].ToString().Replace(" ", "")}";
+            return date;
         }
         string GetType(string rawData)
         {
@@ -483,6 +495,19 @@ namespace ReadWordForms
             {
                 if (rawData.Contains(type.Key))
                     return type.Value;
+            }
+            return string.Empty;
+        }
+        string GetBuliao(List<string> rawDatas,string type)
+        {
+            if (type == this.config.wufangbudai)
+            {
+                foreach (var rawData in rawDatas)
+                {
+                    var matches = RegexDefine.containsWufangbu.Matches(rawData);
+                    if (matches.Count > 0)
+                        return matches[0].ToString();
+                }
             }
             return string.Empty;
         }
@@ -495,21 +520,8 @@ namespace ReadWordForms
             }
             return string.Empty;
         }
-        int GetBuliao(List<string> rawDatas, out string buliao)
-        {
-            buliao = string.Empty;
-            for (int i = 0; i < rawDatas.Count; i++)
-            {
-                string rawData = rawDatas[i];
-                if (!RegexDefine.containsG.IsMatch(rawData))
-                    continue;
-                buliao = rawData;
-                return i;
-            }
-            return -1;
-        }
 
-        string GetYinshua(List<string> rawDatas, string gongyi)
+        string GetYinshua(List<string> rawDatas, string buliao, string gongyi)
         {
             foreach (var rawData in rawDatas)
             {
@@ -517,23 +529,26 @@ namespace ReadWordForms
                 {
                     if (!rawData.Contains(yinshua))
                         continue;
-                    if (string.IsNullOrEmpty(gongyi))
+                    var datas = SplitByBuliaoAndGongyi(rawData, buliao, gongyi);
+                    foreach (var data in datas)
                     {
-                        return rawData;
-                    }
-                    else
-                    {
-                        var datas = Regex.Split(rawData, gongyi);
-                        foreach (var data in datas)
-                        {
-                            if (data.Contains(yinshua))
-                                return data;
-                        }
+                        if (data.Contains(yinshua))
+                            return data;
                     }
                 }
             }
             return string.Empty;
         }
+
+        List<string> SplitByBuliaoAndGongyi(string rawData, string buliao, string gongyi)
+        {
+            var result = new List<string>();
+            var datas = Regex.Split(rawData, buliao);
+            foreach (var data in datas)
+                result.AddRange(Regex.Split(data, gongyi));
+            return result;
+        }
+
         #endregion
 
         #region Excel

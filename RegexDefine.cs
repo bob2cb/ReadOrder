@@ -23,6 +23,6 @@ namespace ReadWordForms
         public static Regex containsWidth = new Regex(@"[\u5bbd]\d+");//宽*
         public static Regex containsHeight = new Regex(@"[\u9ad8]\d+");//高*
         public static Regex containsSide = new Regex(@"[\u4fa7]\d+");//侧*
-        public static Regex containsG = new Regex(@"\d+[\u514b]");//*克
+        public static Regex containsWufangbu = new Regex(@"\d+[\u514b].*[\u65e0\u7eba\u5e03]");//*克***
     }
 }

@@ -7,13 +7,15 @@ namespace ReadWordForms
 {
     public class Config
     {
-        public string senderName;
+        public string[] senderName;
         public string receiveName;
         public string imageName;
         public string zizhi;
         public string waixie;
         public string[] yinshua;
         public string[] gongyi;
+        public string wufangbudai;
+        public string year;
         public Dictionary<string,string> type;
     }
 

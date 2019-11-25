@@ -34,6 +34,7 @@
             this.textBox_img = new System.Windows.Forms.TextBox();
             this.button_img = new System.Windows.Forms.Button();
             this.label_console = new System.Windows.Forms.Label();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
             // 
             // button_text
@@ -48,7 +49,7 @@
             // 
             // button_execute
             // 
-            this.button_execute.Location = new System.Drawing.Point(12, 122);
+            this.button_execute.Location = new System.Drawing.Point(12, 103);
             this.button_execute.Name = "button_execute";
             this.button_execute.Size = new System.Drawing.Size(294, 33);
             this.button_execute.TabIndex = 1;
@@ -85,19 +86,26 @@
             // label_console
             // 
             this.label_console.AutoSize = true;
-            this.label_console.Font = new System.Drawing.Font("微软雅黑", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.label_console.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.label_console.ForeColor = System.Drawing.Color.Brown;
-            this.label_console.Location = new System.Drawing.Point(12, 170);
+            this.label_console.Location = new System.Drawing.Point(12, 179);
             this.label_console.Name = "label_console";
-            this.label_console.Size = new System.Drawing.Size(67, 25);
+            this.label_console.Size = new System.Drawing.Size(0, 20);
             this.label_console.TabIndex = 5;
-            this.label_console.Text = "label1";
+            // 
+            // progressBar
+            // 
+            this.progressBar.Location = new System.Drawing.Point(12, 142);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(292, 25);
+            this.progressBar.TabIndex = 6;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(326, 225);
+            this.ClientSize = new System.Drawing.Size(326, 211);
+            this.Controls.Add(this.progressBar);
             this.Controls.Add(this.label_console);
             this.Controls.Add(this.textBox_img);
             this.Controls.Add(this.button_img);
@@ -119,6 +127,7 @@
         private System.Windows.Forms.TextBox textBox_img;
         private System.Windows.Forms.Button button_img;
         private System.Windows.Forms.Label label_console;
+        private System.Windows.Forms.ProgressBar progressBar;
     }
 }
 
