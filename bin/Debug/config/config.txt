@@ -5,7 +5,6 @@
   ],
   "receiveName": "一年级（上册）",
   "imageName": "[图片]",
-   "year": "2019",
   "zizhi": "自制",
   "waixie": "外协",
   "yinshua": [
@@ -17,8 +16,11 @@
     "一体机制袋",
     "袋口超声波缝纫包边"
   ],
-    "wufangbudai": "无纺布袋",
   "type": {
     "无纺布": "无纺布袋"
+  },
+  "sizeCorrect": {
+    "CT": "0",
+    "(T": "0"
   }
 }
