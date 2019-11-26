@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Forms;
 using LitJson;
 using NPOI;
@@ -23,11 +24,25 @@ namespace ReadWordForms
         private List<OrderData> orderDatas;
         private string dataPath = string.Empty;
 
+        private string lastExcelFullPath
+        {
+            set { this.textBox_last.Text = value; }
+            get { return this.textBox_last.Text; }
+        }
+        private string exportExcelName
+        {
+            get { return string.IsNullOrEmpty(this.textBox_name.Text) ? DateTime.Now.ToString("d") : this.textBox_name.Text; }
+        }
+        private const string DEFAULT_EXCEL_FULLPATH = @"config\order.xlsx";
+        private const string DEFAULT_TEXTBOX_TEXT = "输入导出文件名";
+
         public Form1()
         {
             InitializeComponent();
             //Test();
-            //FastRun();
+            FastRun();
+            bw.DoWork += bw_DoWork;
+            bw.ProgressChanged += bw_ProgressChanged;
         }
 
         void Test()
@@ -76,6 +91,32 @@ namespace ReadWordForms
             }
         }
 
+        private void button_last_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.InitialDirectory = string.IsNullOrEmpty(this.dataPath) ? Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) : this.dataPath;
+            fileDialog.Filter = "Excel文件|*.xlsx;*.xls";
+            fileDialog.RestoreDirectory = false;    //若为false，则打开对话框后为上次的目录。若为true，则为初始目录
+            if (fileDialog.ShowDialog() == DialogResult.OK)
+            {
+                lastExcelFullPath = Path.GetFullPath(fileDialog.FileName);
+            }
+        }
+
+        private void textBox_name_GotFocus(object sender, EventArgs e)
+        {
+            TextBox textBox = (TextBox)sender;
+            if (textBox.Text == DEFAULT_TEXTBOX_TEXT)
+                textBox.Text = "";
+        }
+
+        private void textBox_name_LostFocus(object sender, EventArgs e)
+        {
+            TextBox textBox = (TextBox)sender;
+            if (string.IsNullOrEmpty(textBox.Text))
+                textBox.Text = DEFAULT_TEXTBOX_TEXT;
+        }
+
         private void button_execute_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(this.imgData))
@@ -102,15 +143,47 @@ namespace ReadWordForms
 
         void Execute()
         {
-            ConsoleToLable("");
-            ParseConfigData();
-            ParseRawData();
-            ExportExcelData();
+            ClearConsole();
+            WriteToConsole(System.DateTime.Now.ToString("F"));      
+            bw.RunWorkerAsync(1);
+            //ParseConfigData();
+            //ParseRawData();
+            //ExportExcelData();
+        }
+
+        void bw_DoWork(object sender, DoWorkEventArgs e)
+        {
+            var step = (int)e.Argument;
+            if (step == 1)
+            {
+                bw.ReportProgress(0, "开始解析配置文件...");
+                ParseConfigData();
+                bw.ReportProgress(10, "配置文件解析完成！！");
+                bw.CancelAsync();
+                bw.RunWorkerAsync(2);
+            }
+            else if (step == 2)
+            {
+                bw.ReportProgress(10, "开始解析订单数据...");
+                ParseRawData();
+                bw.CancelAsync();
+                bw.RunWorkerAsync(3);
+            }
+            else if (step == 3)
+            {
+                bw.ReportProgress(90, "开始导出Excel...");
+                ExportExcelData();
+            }
+        }
+
+        void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            progressBar.Value = e.ProgressPercentage;
+            WriteToConsole(e.UserState.ToString());
         }
 
         void ParseConfigData()
         {
-            ConsoleToLable("开始解析配置文件");
             string str = File.ReadAllText(@"config\config.txt");
             if (string.IsNullOrEmpty(str))
             {
@@ -121,11 +194,11 @@ namespace ReadWordForms
         }
 
         void ParseRawData()
-        {
-            ConsoleToLable("开始解析订单数据");
-            this.orderDatas = new List<OrderData>();
+        {      
+
             var textMsgArray = GetTextMsgs(textData);
             var imgMsgArray = GetImageMsgs(imgData);
+            this.orderDatas = new List<OrderData>();
             if (textMsgArray.Count != imgMsgArray.Count)
             {
                 MessageBox.Show($"数据不匹配！！文字{textMsgArray.Count}条,图片{imgMsgArray.Count}张");
@@ -134,7 +207,7 @@ namespace ReadWordForms
 
             for (int i = 0; i < textMsgArray.Count; i++)
             {
-                ConsoleToLable($"正在解析{this.orderDatas.Count}/{textMsgArray.Count}数据！！");
+                //WriteToConsole($"正在解析{this.orderDatas.Count}/{textMsgArray.Count}数据！！");
                 var orderData = new OrderData();
                 orderData.text = textMsgArray[i];
                 orderData.img = imgMsgArray[i];
@@ -198,11 +271,12 @@ namespace ReadWordForms
                 //tishou
                 orderData.buliao = AddTishouToBuliao(splitImgDatas, orderData.buliao);
                 this.orderDatas.Add(orderData);
-                if (this.progressBar != null)
-                    this.progressBar.Value = (int)(this.orderDatas.Count / (float)textMsgArray.Count * 100);
-                System.Threading.Thread.Sleep(100);
+                //if (this.progressBar != null)
+                //    this.progressBar.Value = (int)(this.orderDatas.Count / (float)textMsgArray.Count * 100);
+                int percent = 10 + (int)(this.orderDatas.Count / (float)textMsgArray.Count * 80);
+                bw.ReportProgress(percent, $"解析 {this.orderDatas.Count}/{textMsgArray.Count} 数据");
             }
-            //MessageBox.Show($"成功解析{this.orderDatas.Count}条数据！！");
+            //WriteToConsole($"成功解析{this.orderDatas.Count}条数据！！");
         }
 
         #region Text
@@ -547,7 +621,7 @@ namespace ReadWordForms
             {
                 foreach (var yinshua in this.config.yinshua)
                 {
-                    if (!rawData.Contains(yinshua))
+                    if (!rawData.Contains(yinshua)) 
                         continue;
                     var datas = SplitByBuliaoAndGongyi(rawData, buliao, gongyi);
                     foreach (var data in datas)
@@ -573,18 +647,28 @@ namespace ReadWordForms
 
         #region Excel
         void ExportExcelData()
-        {
-            ConsoleToLable("开始导出Excel");
-            string importExcelPath = @"config\order.xlsx";
-            string exportExcelPath = Path.Combine(this.dataPath, @"order_result.xlsx");
+        {       
+            string importExcelPath = string.Empty;
+            if (string.IsNullOrEmpty(lastExcelFullPath))
+            {
+                WriteToConsole("开始导出新的Excel");
+                importExcelPath = DEFAULT_EXCEL_FULLPATH;
+            }
+            else
+            {
+                WriteToConsole($"继续上一次Excel：{lastExcelFullPath} 导出");
+                importExcelPath = lastExcelFullPath;
+            }
+            string exportExcelPath = $"{this.dataPath}/{exportExcelName}.xlsx";
             IWorkbook workbook = WorkbookFactory.Create(importExcelPath);
             ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
+            int startRow = GetStartRow(sheet);
             for (int i = 0; i < this.orderDatas.Count; i++)
             {
                 int propertiesIndex = -3;
                 var orderData = this.orderDatas[i];
                 Type t = orderData.GetType();
-                IRow row = (IRow)sheet.GetRow(i + 1);//获取第i+1行
+                IRow row = (IRow)sheet.GetRow(i + startRow);
                 foreach (PropertyInfo pi in t.GetProperties())
                 {
                     propertiesIndex++;
@@ -596,7 +680,20 @@ namespace ReadWordForms
             FileStream fs = new FileStream(exportExcelPath, FileMode.Create, FileAccess.ReadWrite);
             workbook.Write(fs);
             fs.Close();
-            ConsoleToLable($"导出{exportExcelPath}完成");
+            bw.ReportProgress(100, $"导出完成：{exportExcelPath}");
+        }
+        int GetStartRow(ISheet sheet)
+        {
+            int startRow = -1;
+            while (true)
+            {
+                startRow++;
+                IRow row = (IRow)sheet.GetRow(startRow);
+                var cell = row.GetCell(0);
+                if (cell == null || string.IsNullOrEmpty(cell.ToString()))
+                    return startRow;
+
+            }
         }
         void SetCellValue(IRow row, int cell, object vaule)
         {
@@ -616,14 +713,18 @@ namespace ReadWordForms
 
         #region Components
 
-        void ConsoleToLable(string str)
+        void WriteToConsole(string str)
         {
-            if (this.label_console != null)
-                this.label_console.Text = str;
+            if (this.textBox_console != null)
+                this.textBox_console.Text += "\r\n" + str;
             else
                 Console.WriteLine(str);
         }
-
+        void ClearConsole()
+        {
+            if (this.textBox_console != null)
+                this.textBox_console.Text = "";
+        }
         void DisableAllControls()
         {
             foreach (Control ctl in Controls)

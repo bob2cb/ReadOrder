@@ -33,8 +33,12 @@
             this.textBox_text = new System.Windows.Forms.TextBox();
             this.textBox_img = new System.Windows.Forms.TextBox();
             this.button_img = new System.Windows.Forms.Button();
-            this.label_console = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.textBox_last = new System.Windows.Forms.TextBox();
+            this.button_last = new System.Windows.Forms.Button();
+            this.textBox_name = new System.Windows.Forms.TextBox();
+            this.textBox_console = new System.Windows.Forms.TextBox();
+            this.bw = new System.ComponentModel.BackgroundWorker();
             this.SuspendLayout();
             // 
             // button_text
@@ -49,11 +53,11 @@
             // 
             // button_execute
             // 
-            this.button_execute.Location = new System.Drawing.Point(12, 103);
+            this.button_execute.Location = new System.Drawing.Point(186, 183);
             this.button_execute.Name = "button_execute";
-            this.button_execute.Size = new System.Drawing.Size(294, 33);
+            this.button_execute.Size = new System.Drawing.Size(118, 33);
             this.button_execute.TabIndex = 1;
-            this.button_execute.Text = "执行";
+            this.button_execute.Text = "运行";
             this.button_execute.UseVisualStyleBackColor = true;
             this.button_execute.Click += new System.EventHandler(this.button_execute_Click);
             // 
@@ -68,14 +72,14 @@
             // textBox_img
             // 
             this.textBox_img.Font = new System.Drawing.Font("宋体", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.textBox_img.Location = new System.Drawing.Point(116, 64);
+            this.textBox_img.Location = new System.Drawing.Point(116, 67);
             this.textBox_img.Name = "textBox_img";
             this.textBox_img.Size = new System.Drawing.Size(188, 30);
             this.textBox_img.TabIndex = 4;
             // 
             // button_img
             // 
-            this.button_img.Location = new System.Drawing.Point(12, 64);
+            this.button_img.Location = new System.Drawing.Point(12, 67);
             this.button_img.Name = "button_img";
             this.button_img.Size = new System.Drawing.Size(98, 33);
             this.button_img.TabIndex = 3;
@@ -83,30 +87,65 @@
             this.button_img.UseVisualStyleBackColor = true;
             this.button_img.Click += new System.EventHandler(this.button_img_Click);
             // 
-            // label_console
-            // 
-            this.label_console.AutoSize = true;
-            this.label_console.Font = new System.Drawing.Font("微软雅黑", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.label_console.ForeColor = System.Drawing.Color.Brown;
-            this.label_console.Location = new System.Drawing.Point(12, 179);
-            this.label_console.Name = "label_console";
-            this.label_console.Size = new System.Drawing.Size(0, 20);
-            this.label_console.TabIndex = 5;
-            // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(12, 142);
+            this.progressBar.Location = new System.Drawing.Point(310, 191);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(292, 25);
+            this.progressBar.Size = new System.Drawing.Size(355, 25);
             this.progressBar.TabIndex = 6;
+            // 
+            // textBox_last
+            // 
+            this.textBox_last.Font = new System.Drawing.Font("宋体", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.textBox_last.Location = new System.Drawing.Point(116, 112);
+            this.textBox_last.Name = "textBox_last";
+            this.textBox_last.Size = new System.Drawing.Size(188, 30);
+            this.textBox_last.TabIndex = 8;
+            // 
+            // button_last
+            // 
+            this.button_last.Location = new System.Drawing.Point(12, 112);
+            this.button_last.Name = "button_last";
+            this.button_last.Size = new System.Drawing.Size(98, 33);
+            this.button_last.TabIndex = 7;
+            this.button_last.Text = "继续上一次";
+            this.button_last.UseVisualStyleBackColor = true;
+            this.button_last.Click += new System.EventHandler(this.button_last_Click);
+            // 
+            // textBox_name
+            // 
+            this.textBox_name.Font = new System.Drawing.Font("宋体", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.textBox_name.Location = new System.Drawing.Point(12, 185);
+            this.textBox_name.Name = "textBox_name";
+            this.textBox_name.Size = new System.Drawing.Size(168, 30);
+            this.textBox_name.TabIndex = 9;
+            this.textBox_name.Text = "输入导出文件名";
+            this.textBox_name.GotFocus += new System.EventHandler(this.textBox_name_GotFocus);
+            this.textBox_name.LostFocus += new System.EventHandler(this.textBox_name_LostFocus);
+            // 
+            // textBox_console
+            // 
+            this.textBox_console.Location = new System.Drawing.Point(310, 25);
+            this.textBox_console.Multiline = true;
+            this.textBox_console.Name = "textBox_console";
+            this.textBox_console.Size = new System.Drawing.Size(355, 160);
+            this.textBox_console.TabIndex = 10;
+            // 
+            // bw
+            // 
+            this.bw.WorkerReportsProgress = true;
+            this.bw.WorkerSupportsCancellation = true;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(326, 211);
+            this.ClientSize = new System.Drawing.Size(679, 228);
+            this.Controls.Add(this.textBox_console);
+            this.Controls.Add(this.textBox_name);
+            this.Controls.Add(this.textBox_last);
+            this.Controls.Add(this.button_last);
             this.Controls.Add(this.progressBar);
-            this.Controls.Add(this.label_console);
             this.Controls.Add(this.textBox_img);
             this.Controls.Add(this.button_img);
             this.Controls.Add(this.textBox_text);
@@ -126,8 +165,12 @@
         private System.Windows.Forms.TextBox textBox_text;
         private System.Windows.Forms.TextBox textBox_img;
         private System.Windows.Forms.Button button_img;
-        private System.Windows.Forms.Label label_console;
         private System.Windows.Forms.ProgressBar progressBar;
+        private System.Windows.Forms.TextBox textBox_last;
+        private System.Windows.Forms.Button button_last;
+        private System.Windows.Forms.TextBox textBox_name;
+        private System.Windows.Forms.TextBox textBox_console;
+        private System.ComponentModel.BackgroundWorker bw;
     }
 }
 
