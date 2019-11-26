@@ -40,7 +40,7 @@ namespace ReadWordForms
         {
             InitializeComponent();
             //Test();
-            FastRun();
+            //FastRun();
             bw.DoWork += bw_DoWork;
             bw.ProgressChanged += bw_ProgressChanged;
         }
@@ -145,35 +145,18 @@ namespace ReadWordForms
         {
             ClearConsole();
             WriteToConsole(System.DateTime.Now.ToString("F"));      
-            bw.RunWorkerAsync(1);
-            //ParseConfigData();
-            //ParseRawData();
-            //ExportExcelData();
+            bw.RunWorkerAsync();
         }
 
         void bw_DoWork(object sender, DoWorkEventArgs e)
         {
-            var step = (int)e.Argument;
-            if (step == 1)
-            {
-                bw.ReportProgress(0, "开始解析配置文件...");
-                ParseConfigData();
-                bw.ReportProgress(10, "配置文件解析完成！！");
-                bw.CancelAsync();
-                bw.RunWorkerAsync(2);
-            }
-            else if (step == 2)
-            {
-                bw.ReportProgress(10, "开始解析订单数据...");
-                ParseRawData();
-                bw.CancelAsync();
-                bw.RunWorkerAsync(3);
-            }
-            else if (step == 3)
-            {
-                bw.ReportProgress(90, "开始导出Excel...");
-                ExportExcelData();
-            }
+            bw.ReportProgress(0, "开始解析配置文件...");
+            ParseConfigData();
+            bw.ReportProgress(10, "配置文件解析完成！！");
+            bw.ReportProgress(10, "开始解析订单数据...");
+            ParseRawData();
+            bw.ReportProgress(90, string.IsNullOrEmpty(lastExcelFullPath) ? "开始导出新的Excel..." : $"继续上一次Excel：{lastExcelFullPath} 导出");
+            ExportExcelData();
         }
 
         void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -648,17 +631,17 @@ namespace ReadWordForms
         #region Excel
         void ExportExcelData()
         {       
-            string importExcelPath = string.Empty;
-            if (string.IsNullOrEmpty(lastExcelFullPath))
-            {
-                WriteToConsole("开始导出新的Excel");
-                importExcelPath = DEFAULT_EXCEL_FULLPATH;
-            }
-            else
-            {
-                WriteToConsole($"继续上一次Excel：{lastExcelFullPath} 导出");
-                importExcelPath = lastExcelFullPath;
-            }
+            string importExcelPath = string.IsNullOrEmpty(lastExcelFullPath)? DEFAULT_EXCEL_FULLPATH: lastExcelFullPath;
+            //if (string.IsNullOrEmpty(lastExcelFullPath))
+            //{
+            //    //WriteToConsole("开始导出新的Excel");
+            //    importExcelPath = DEFAULT_EXCEL_FULLPATH;
+            //}
+            //else
+            //{
+            //    //WriteToConsole($"继续上一次Excel：{lastExcelFullPath} 导出");
+            //    importExcelPath = lastExcelFullPath;
+            //}
             string exportExcelPath = $"{this.dataPath}/{exportExcelName}.xlsx";
             IWorkbook workbook = WorkbookFactory.Create(importExcelPath);
             ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
