@@ -47,8 +47,10 @@ namespace ReadWordForms
 
         void Test()
         {
-            string rawData = "11. 30";
-            Regex rg1 = new Regex(@"(10|11|12|[0]?\d)[.]\s{0,2}[0-3]?\d");
+            string rawData = "*1293=";
+            //string rawData = "1998";
+            Regex rg1 = new Regex(@"\d+?[.]?\d+(?==)");//*=
+
             //Regex rg2 = new Regex("[0-9]+([.]{1}[0-9]+){0,1}$");
             //Regex rg2 = new Regex(@"\d+[.]\d+");
             Console.WriteLine(rg1.IsMatch(rawData));
@@ -236,6 +238,8 @@ namespace ReadWordForms
                 var splitImgDatas = GetSplitedDataByEnterAndSpace(orderData.img);
                 //deliveryDate
                 orderData.deliveryDate = GetDeliveryDate(orderData.img);
+                //banfei
+                orderData.banfei = GetBanfei(orderData.img);
                 //size
                 string size = string.Empty;
                 int sizeIndex = GetSize(splitImgDatas, out size);
@@ -252,6 +256,7 @@ namespace ReadWordForms
                 orderData.yinshua = GetYinshua(splitImgDatas, orderData.buliao, orderData.gongyi);
                 //tishou
                 orderData.buliao = AddTishouToBuliao(splitImgDatas, orderData.buliao);
+
                 this.orderDatas.Add(orderData);
                 int percent = 10 + (int)(this.orderDatas.Count / (float)textMsgArray.Count * 80);
                 bw.ReportProgress(percent, $"解析 {this.orderDatas.Count}/{textMsgArray.Count} 数据");
@@ -366,20 +371,17 @@ namespace ReadWordForms
                 if (number == 0 && RegexDefine.containsGe.IsMatch(rawData))
                 {
                     matches = RegexDefine.containsGe.Matches(rawData);
-                    tempStr = GetIntOrFloatString(matches[0].ToString());
-                    int.TryParse(tempStr, out number);
+                    int.TryParse(matches[0].ToString(), out number);
                 }
                 if (danjia == 0 && RegexDefine.containsPerge.IsMatch(rawData))
                 {
                     matches = RegexDefine.containsPerge.Matches(rawData);
-                    tempStr = GetIntOrFloatString(matches[0].ToString());
-                    float.TryParse(tempStr, out danjia);
+                    float.TryParse(matches[0].ToString(), out danjia);
                 }
                 if (zongjia == 0 && RegexDefine.containsEqualInLeft.IsMatch(rawData))
                 {
                     matches = RegexDefine.containsEqualInLeft.Matches(rawData);
-                    tempStr = GetIntOrFloatString(matches[0].ToString());
-                    float.TryParse(tempStr, out zongjia);
+                    float.TryParse(matches[0].ToString(), out zongjia);
                 }
                 if (HasValueWithNumberAndPrice(number, danjia, zongjia))
                     return;
@@ -405,18 +407,10 @@ namespace ReadWordForms
                 }
                 if (HasValueWithNumberAndPrice(number, danjia, zongjia))
                     return;
-                //if ((danjia == 0 || zongjia == 0) && RegexDefine.containsMulit.IsMatch(rawData))
-                //{
-                //    matches = RegexDefine.containsMulit.Matches(rawData);
-                //    SetValueToDanjiaOrZongjia(matches[0].ToString(), ref danjia, ref zongjia);
-                //}
-                //if (HasValueWithNumberAndPrice(number, danjia, zongjia))
-                //    return;
                 if ((zongjia == 0) && RegexDefine.isIntOrfloat.IsMatch(rawData) && !RegexDefine.isDate.IsMatch(rawData))
                 {
                     matches = RegexDefine.isIntOrfloat.Matches(rawData);
-                    tempStr = GetIntOrFloatString(matches[0].ToString());
-                    float.TryParse(tempStr, out zongjia);
+                    float.TryParse(matches[0].ToString(), out zongjia);
                 }
             }
         }
@@ -448,10 +442,9 @@ namespace ReadWordForms
         {
             var matches = RegexDefine.containsEqualInLeft.Matches(rawData);
             string equalRightStr = matches[0].ToString();
-            var tempStr = GetIntOrFloatString(equalRightStr);
-            float.TryParse(tempStr, out zongjia);
+            float.TryParse(equalRightStr, out zongjia);
 
-            tempStr = rawData.Substring(0, rawData.IndexOf(equalRightStr));
+            var tempStr = rawData.Substring(0, rawData.IndexOf(equalRightStr));
             var danjiaAndNumber = tempStr.Split('*');
             var shuziStr1 = GetIntOrFloatString(danjiaAndNumber[0]);
             var shuziStr2 = GetIntOrFloatString(danjiaAndNumber[1]);
@@ -479,8 +472,7 @@ namespace ReadWordForms
         void SetValueToDanjiaOrNumber(string rawData, ref float danjia, ref int number)
         {
             float tempFloat = 0;
-            var tempStr = GetIntOrFloatString(rawData);
-            float.TryParse(tempStr, out tempFloat);
+            float.TryParse(rawData, out tempFloat);
             if (RegexDefine.isFloat.IsMatch(rawData) || tempFloat < 10)
                 danjia = tempFloat;
             else
@@ -489,9 +481,7 @@ namespace ReadWordForms
         void SetValueToDanjiaOrZongjia(string rawData, ref float danjia, ref float zongjia)
         {
             float tempFloat = 0;
-            var tempStr = GetIntOrFloatString(rawData);
-            //var tempStr = Regex.Replace(rawData, @"[^0-9]+", "");
-            float.TryParse(tempStr, out tempFloat);
+            float.TryParse(rawData, out tempFloat);
             if (tempFloat < 10)
                 danjia = tempFloat;
             else
@@ -546,11 +536,17 @@ namespace ReadWordForms
         }
         string GetDeliveryDate(string rawData)
         {
-            string date = string.Empty;
             var matches = RegexDefine.isDate.Matches(rawData);
             if (matches.Count > 0)
-                date = $"{this.config.year}.{matches[0].ToString().Replace(" ", "")}";
-            return date;
+                return $"{this.config.year}.{matches[0].ToString().Replace(" ", "")}";
+            return string.Empty;
+        }
+        float GetBanfei(string rawData)
+        {
+            var matches = RegexDefine.containsBanfei.Matches(rawData);
+            if (matches.Count > 0)
+                return float.Parse(matches[0].ToString());
+            return 0;
         }
         string GetType(string rawData)
         {
