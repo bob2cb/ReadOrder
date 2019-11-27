@@ -152,7 +152,6 @@ namespace ReadWordForms
         {
             bw.ReportProgress(0, "开始解析配置文件...");
             ParseConfigData();
-            bw.ReportProgress(10, "配置文件解析完成！！");
             bw.ReportProgress(10, "开始解析订单数据...");
             ParseRawData();
             bw.ReportProgress(90, string.IsNullOrEmpty(lastExcelFullPath) ? "开始导出新的Excel..." : $"继续上一次Excel：{lastExcelFullPath} 导出");
@@ -254,12 +253,10 @@ namespace ReadWordForms
                 //tishou
                 orderData.buliao = AddTishouToBuliao(splitImgDatas, orderData.buliao);
                 this.orderDatas.Add(orderData);
-                //if (this.progressBar != null)
-                //    this.progressBar.Value = (int)(this.orderDatas.Count / (float)textMsgArray.Count * 100);
                 int percent = 10 + (int)(this.orderDatas.Count / (float)textMsgArray.Count * 80);
                 bw.ReportProgress(percent, $"解析 {this.orderDatas.Count}/{textMsgArray.Count} 数据");
+                Thread.Sleep(500);
             }
-            //WriteToConsole($"成功解析{this.orderDatas.Count}条数据！！");
         }
 
         #region Text
@@ -632,16 +629,6 @@ namespace ReadWordForms
         void ExportExcelData()
         {       
             string importExcelPath = string.IsNullOrEmpty(lastExcelFullPath)? DEFAULT_EXCEL_FULLPATH: lastExcelFullPath;
-            //if (string.IsNullOrEmpty(lastExcelFullPath))
-            //{
-            //    //WriteToConsole("开始导出新的Excel");
-            //    importExcelPath = DEFAULT_EXCEL_FULLPATH;
-            //}
-            //else
-            //{
-            //    //WriteToConsole($"继续上一次Excel：{lastExcelFullPath} 导出");
-            //    importExcelPath = lastExcelFullPath;
-            //}
             string exportExcelPath = $"{this.dataPath}/{exportExcelName}.xlsx";
             IWorkbook workbook = WorkbookFactory.Create(importExcelPath);
             ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
@@ -699,7 +686,7 @@ namespace ReadWordForms
         void WriteToConsole(string str)
         {
             if (this.textBox_console != null)
-                this.textBox_console.Text += "\r\n" + str;
+                this.textBox_console.Text +=  str + "\r\n";
             else
                 Console.WriteLine(str);
         }
