@@ -9,7 +9,7 @@ namespace ReadWordForms
     class RegexDefine
     {
         public static Regex containsIntOrfloat = new Regex(@"\d+([.]\d+)?");
-        public static Regex isIntOrfloat = new Regex(@"^\d+([.]\d+){0,1}$");
+        public static Regex isIntOrfloat = new Regex(@"^\d+([.]\d+)?$");
         public static Regex isFloat = new Regex(@"^\d+[.]\d+$");
         public static Regex isCh = new Regex(@"[\u4e00 - \u9fa5]");
         public static Regex containsGe = new Regex(@"\d+(?=\u4e2a)");//*个
