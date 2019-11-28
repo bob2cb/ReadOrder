@@ -31,7 +31,7 @@ namespace ReadWordForms
         }
         private string exportExcelName
         {
-            get { return string.IsNullOrEmpty(this.textBox_name.Text) ? DateTime.Now.ToString("d") : this.textBox_name.Text; }
+            get { return this.textBox_name.Text == DEFAULT_TEXTBOX_TEXT ? DateTime.Now.ToString("D") : this.textBox_name.Text; }
         }
         private const string DEFAULT_EXCEL_FULLPATH = @"config\order.xlsx";
         private const string DEFAULT_TEXTBOX_TEXT = "输入导出文件名";
@@ -599,7 +599,7 @@ namespace ReadWordForms
                 {
                     if (!rawData.Contains(yinshua)) 
                         continue;
-                    var datas = SplitByBuliaoAndGongyi(rawData, buliao, gongyi);
+                    var datas = SplitByBuliaoAndGongyiAndTishou(rawData, buliao, gongyi);
                     foreach (var data in datas)
                     {
                         if (data.Contains(yinshua))
@@ -610,12 +610,16 @@ namespace ReadWordForms
             return string.Empty;
         }
 
-        List<string> SplitByBuliaoAndGongyi(string rawData, string buliao, string gongyi)
+        List<string> SplitByBuliaoAndGongyiAndTishou(string rawData, string buliao, string gongyi)
         {
             var result = new List<string>();
-            var datas = Regex.Split(rawData, buliao);
-            foreach (var data in datas)
-                result.AddRange(Regex.Split(data, gongyi));
+            var buliaos = Regex.Split(rawData, buliao);
+            foreach (var b in buliaos)
+            {
+                var gongyis = Regex.Split(b, gongyi);
+                foreach (var g in gongyis)
+                    result.AddRange(Regex.Split(g, this.config.tishou));
+            }
             return result;
         }
 
@@ -625,7 +629,7 @@ namespace ReadWordForms
         void ExportExcelData()
         {       
             string importExcelPath = string.IsNullOrEmpty(lastExcelFullPath)? DEFAULT_EXCEL_FULLPATH: lastExcelFullPath;
-            string exportExcelPath = $"{this.dataPath}/{exportExcelName}.xlsx";
+            string exportExcelPath = $@"{this.dataPath}\{exportExcelName}.xlsx";
             IWorkbook workbook = WorkbookFactory.Create(importExcelPath);
             ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
             int startRow = GetStartRow(sheet);
