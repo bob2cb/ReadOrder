@@ -15,10 +15,12 @@ namespace ReadWordForms
         public string[] yinshua;
         public string[] gongyi;
         public string wufangbudai;
+        public string weiqun;
         public string tishou;
         public string year;
         public Dictionary<string,string> type;
         public Dictionary<string, string> sizeCorrect;
+        public string[] weiqunyinshua;      
     }
 
 

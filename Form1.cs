@@ -236,27 +236,39 @@ namespace ReadWordForms
                 orderData.danjia = zz_danjia;
 
                 var splitImgDatas = GetSplitedDataByEnterAndSpace(orderData.img);
+                //type
+                orderData.type = GetType(orderData.img);
                 //deliveryDate
                 orderData.deliveryDate = GetDeliveryDate(orderData.img);
-                //banfei
-                orderData.banfei = GetBanfei(orderData.img);
                 //size
                 string size = string.Empty;
-                int sizeIndex = GetSize(splitImgDatas, out size);
+                int sizeIndex = -1;
+                if (orderData.type == this.config.wufangbudai)
+                    sizeIndex = GetWFBDSize(splitImgDatas, out size);
+                else if (orderData.type == this.config.weiqun)
+                    sizeIndex = GetWQSize(splitImgDatas, out size);
                 orderData.size = size;
                 if (sizeIndex != -1)
                     splitImgDatas.RemoveAt(sizeIndex);
-                //type
-                orderData.type = GetType(orderData.img);
-                //buliao
-                orderData.buliao = GetBuliao(splitImgDatas, orderData.type);
-                //gongyi
-                orderData.gongyi = GetGongyi(orderData.img);
-                //yinshua
-                orderData.yinshua = GetYinshua(splitImgDatas, orderData.buliao, orderData.gongyi);
-                //tishou
-                orderData.buliao = AddTishouToBuliao(splitImgDatas, orderData.buliao);
 
+
+                if (orderData.type == this.config.wufangbudai)
+                {
+                    //banfei
+                    orderData.banfei = GetBanfei(orderData.img);
+                    //buliao
+                    orderData.buliao = GetBuliao(splitImgDatas, orderData.type);
+                    //gongyi
+                    orderData.gongyi = GetGongyi(orderData.img);
+                    //yinshua
+                    orderData.yinshua = GetWFBDYinshua(splitImgDatas, orderData.buliao, orderData.gongyi);
+                    //tishou
+                    orderData.buliao = AddTishouToBuliao(splitImgDatas, orderData.buliao);
+                }
+                else if (orderData.type == this.config.weiqun)
+                {
+                    orderData.yinshua = GetWQYinshua(orderData.img);
+                }
                 this.orderDatas.Add(orderData);
                 int percent = 10 + (int)(this.orderDatas.Count / (float)textMsgArray.Count * 80);
                 bw.ReportProgress(percent, $"解析 {this.orderDatas.Count}/{textMsgArray.Count} 数据");
@@ -373,9 +385,9 @@ namespace ReadWordForms
                     matches = RegexDefine.containsGe.Matches(rawData);
                     int.TryParse(matches[0].ToString(), out number);
                 }
-                if (danjia == 0 && RegexDefine.containsPerge.IsMatch(rawData))
+                if (danjia == 0 && RegexDefine.containsPerGeOrTiao.IsMatch(rawData))
                 {
-                    matches = RegexDefine.containsPerge.Matches(rawData);
+                    matches = RegexDefine.containsPerGeOrTiao.Matches(rawData);
                     float.TryParse(matches[0].ToString(), out danjia);
                 }
                 if (zongjia == 0 && RegexDefine.containsEqualInLeft.IsMatch(rawData))
@@ -503,7 +515,7 @@ namespace ReadWordForms
             }
             return imageMsgs;
         }
-        int GetSize(List<string> rawDatas, out string size)
+        int GetWFBDSize(List<string> rawDatas, out string size)
         {
             size = string.Empty;
             MatchCollection matches = null;
@@ -524,6 +536,27 @@ namespace ReadWordForms
                 matches = RegexDefine.containsSide.Matches(rawData);
                 string sizeSize = matches[0].ToString();
                 size = $"{sizeWidth}*{sizeHeight}*{sizeSize}";
+                return i;
+            }
+            return -1;
+        }
+        int GetWQSize(List<string> rawDatas, out string size)
+        {
+            size = string.Empty;
+            MatchCollection matches = null;
+            for (int i = 0; i < rawDatas.Count; i++)
+            {
+                string rawData = rawDatas[i];
+                if (!RegexDefine.containsWidth.IsMatch(rawData))
+                    continue;
+                if (!RegexDefine.containsHeight.IsMatch(rawData))
+                    continue;
+                rawData = CorrectSizeData(rawData);
+                matches = RegexDefine.containsWidth.Matches(rawData);
+                string sizeWidth = matches[0].ToString();
+                matches = RegexDefine.containsHeight.Matches(rawData);
+                string sizeHeight = matches[0].ToString();
+                size = $"{sizeWidth}*{sizeHeight}";
                 return i;
             }
             return -1;
@@ -591,7 +624,7 @@ namespace ReadWordForms
             return string.Empty;
         }
 
-        string GetYinshua(List<string> rawDatas, string buliao, string gongyi)
+        string GetWFBDYinshua(List<string> rawDatas, string buliao, string gongyi)
         {
             foreach (var rawData in rawDatas)
             {
@@ -609,7 +642,16 @@ namespace ReadWordForms
             }
             return string.Empty;
         }
-
+        string GetWQYinshua(string rawData)
+        {
+            foreach (var yinshua in this.config.weiqunyinshua)
+            {
+                if (rawData.Contains(yinshua))
+                    return yinshua;
+            }
+            return string.Empty;
+        }
+ 
         List<string> SplitByBuliaoAndGongyiAndTishou(string rawData, string buliao, string gongyi)
         {
             var result = new List<string>();
