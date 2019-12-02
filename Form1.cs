@@ -31,34 +31,34 @@ namespace ReadWordForms
         }
         private string exportExcelName
         {
-            get { return this.textBox_name.Text == DEFAULT_TEXTBOX_TEXT ? DateTime.Now.ToString("D") : this.textBox_name.Text; }
+            get { return (this.textBox_name.Text == DEFAULT_TEXTBOX_TEXT ? DateTime.Now.ToString("D") : this.textBox_name.Text) + ".xlsx"; }
         }
         private const string DEFAULT_EXCEL_FULLPATH = @"config\order.xlsx";
         private const string DEFAULT_TEXTBOX_TEXT = "输入导出文件名";
 
         public Form1()
         {
-            InitializeComponent();
             //Test();
-            //FastRun();
+            InitializeComponent();
+            FastRun();
             bw.DoWork += bw_DoWork;
             bw.ProgressChanged += bw_ProgressChanged;
         }
 
         void Test()
         {
-            string rawData = "*1293=";
+            //string rawData = "8CTKE";
+            //string rawData = "8(TKE5CT9〇";
+            //Console.WriteLine(ReplaceWrongChar(rawData));
             //string rawData = "1998";
-            Regex rg1 = new Regex(@"\d+?[.]?\d+(?==)");//*=
-
-            //Regex rg2 = new Regex("[0-9]+([.]{1}[0-9]+){0,1}$");
+            //Regex rg1 = new Regex(@"\d+?[.]?\d+(?==)");//*=
             //Regex rg2 = new Regex(@"\d+[.]\d+");
-            Console.WriteLine(rg1.IsMatch(rawData));
-            if (rg1.IsMatch(rawData))
-            {
-                var matches = rg1.Matches(rawData);
-                Console.WriteLine(matches[0].ToString());
-            }
+            //Console.WriteLine(rg1.IsMatch(rawData));
+            //if (rg1.IsMatch(rawData))
+            //{
+            //    var matches = rg1.Matches(rawData);
+            //    Console.WriteLine(matches[0].ToString());
+            //}
             //else if (rg2.IsMatch(rawData))
             //{
             //    var matches = rg2.Matches(rawData);
@@ -194,7 +194,7 @@ namespace ReadWordForms
                 //WriteToConsole($"正在解析{this.orderDatas.Count}/{textMsgArray.Count}数据！！");
                 var orderData = new OrderData();
                 orderData.text = textMsgArray[i];
-                orderData.img = imgMsgArray[i];
+                orderData.img = ReplaceWrongChar(imgMsgArray[i]);
                 var splitTextDatas = GetSplitedDataByEnterAndSpace(orderData.text);
                 //name
                 string customerName = string.Empty;
@@ -242,11 +242,7 @@ namespace ReadWordForms
                 orderData.deliveryDate = GetDeliveryDate(orderData.img);
                 //size
                 string size = string.Empty;
-                int sizeIndex = -1;
-                if (orderData.type == this.config.wufangbudai)
-                    sizeIndex = GetWFBDSize(splitImgDatas, out size);
-                else if (orderData.type == this.config.weiqun)
-                    sizeIndex = GetWQSize(splitImgDatas, out size);
+                int sizeIndex = GetSize(splitImgDatas, out size);
                 orderData.size = size;
                 if (sizeIndex != -1)
                     splitImgDatas.RemoveAt(sizeIndex);
@@ -502,6 +498,15 @@ namespace ReadWordForms
         #endregion
 
         #region Image
+        string ReplaceWrongChar(string rawData)
+        {
+            foreach (var replaceItem in this.config.replace)
+            {
+                Regex rg = new Regex(@"(?<=\d+)" + replaceItem.Key);
+                rawData = rg.Replace(rawData, replaceItem.Value);
+            }
+            return rawData;
+        }
         List<string> GetImageMsgs(string rawData)
         {
             List<string> imageMsgs = new List<string>();
@@ -515,7 +520,7 @@ namespace ReadWordForms
             }
             return imageMsgs;
         }
-        int GetWFBDSize(List<string> rawDatas, out string size)
+        int GetSize(List<string> rawDatas, out string size)
         {
             size = string.Empty;
             MatchCollection matches = null;
@@ -526,46 +531,23 @@ namespace ReadWordForms
                     continue;
                 if (!RegexDefine.containsHeight.IsMatch(rawData))
                     continue;
-                if (!RegexDefine.containsSide.IsMatch(rawData))
-                    continue;
-                rawData = CorrectSizeData(rawData);
                 matches = RegexDefine.containsWidth.Matches(rawData);
                 string sizeWidth = matches[0].ToString();
                 matches = RegexDefine.containsHeight.Matches(rawData);
                 string sizeHeight = matches[0].ToString();
-                matches = RegexDefine.containsSide.Matches(rawData);
-                string sizeSize = matches[0].ToString();
-                size = $"{sizeWidth}*{sizeHeight}*{sizeSize}";
+                if (RegexDefine.containsSide.IsMatch(rawData))
+                {
+                    matches = RegexDefine.containsSide.Matches(rawData);
+                    string sizeSide = matches[0].ToString();
+                    size = $"{sizeWidth}*{sizeHeight}*{sizeSide}";
+                }
+                else
+                {
+                    size = $"{sizeWidth}*{sizeHeight}";
+                }
                 return i;
             }
             return -1;
-        }
-        int GetWQSize(List<string> rawDatas, out string size)
-        {
-            size = string.Empty;
-            MatchCollection matches = null;
-            for (int i = 0; i < rawDatas.Count; i++)
-            {
-                string rawData = rawDatas[i];
-                if (!RegexDefine.containsWidth.IsMatch(rawData))
-                    continue;
-                if (!RegexDefine.containsHeight.IsMatch(rawData))
-                    continue;
-                rawData = CorrectSizeData(rawData);
-                matches = RegexDefine.containsWidth.Matches(rawData);
-                string sizeWidth = matches[0].ToString();
-                matches = RegexDefine.containsHeight.Matches(rawData);
-                string sizeHeight = matches[0].ToString();
-                size = $"{sizeWidth}*{sizeHeight}";
-                return i;
-            }
-            return -1;
-        }
-        string CorrectSizeData(string rawData)
-        {
-            foreach (var sizeCorrect in this.config.sizeCorrect)
-                rawData = rawData.Replace(sizeCorrect.Key, sizeCorrect.Value);
-            return rawData;
         }
         string GetDeliveryDate(string rawData)
         {
@@ -671,7 +653,6 @@ namespace ReadWordForms
         void ExportExcelData()
         {       
             string importExcelPath = string.IsNullOrEmpty(lastExcelFullPath)? DEFAULT_EXCEL_FULLPATH: lastExcelFullPath;
-            string exportExcelPath = $@"{this.dataPath}\{exportExcelName}.xlsx";
             IWorkbook workbook = WorkbookFactory.Create(importExcelPath);
             ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
             int startRow = GetStartRow(sheet);
@@ -689,6 +670,7 @@ namespace ReadWordForms
                 }
             }
             //导出excel
+            string exportExcelPath = Path.Combine(this.dataPath, exportExcelName);
             FileStream fs = new FileStream(exportExcelPath, FileMode.Create, FileAccess.ReadWrite);
             workbook.Write(fs);
             fs.Close();
@@ -724,11 +706,10 @@ namespace ReadWordForms
         #endregion
 
         #region Components
-
         void WriteToConsole(string str)
         {
             if (this.textBox_console != null)
-                this.textBox_console.Text +=  str + "\r\n";
+                this.textBox_console.AppendText(str + "\r\n");
             else
                 Console.WriteLine(str);
         }
@@ -744,7 +725,6 @@ namespace ReadWordForms
                 ctl.Enabled = false;
             }
         }
-
         void EnableAllControls()
         {
             foreach (Control ctl in Controls)

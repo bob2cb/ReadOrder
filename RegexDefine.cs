@@ -13,8 +13,8 @@ namespace ReadWordForms
         public static Regex isFloat = new Regex(@"^\d+[.]\d+$");
         public static Regex isCh = new Regex(@"[\u4e00 - \u9fa5]");
         public static Regex containsGe = new Regex(@"\d+(?=\u4e2a)");//*个
-        public static Regex containsYuan = new Regex(@"\d+(?=\u5143)");//*元
-        public static Regex containsPerGeOrTiao = new Regex(@"\d+(?=/[\u4e2a\u6761])");//*/个条
+        public static Regex containsYuan = new Regex(@"\d+([.]\d+)?(?=\u5143)");//*元
+        public static Regex containsPerGeOrTiao = new Regex(@"\d+([.]\d+)?(?=/[\u4e2a\u6761])");//*/个条
         public static Regex containsEqualInLeft = new Regex(@"(?<==)\d+([.]\d+)?");//=*
         public static Regex containsEqualInRight = new Regex(@"(\d+[.])?\d+(?==)");//*=
         public static Regex isDate = new Regex(@"(10|11|12|[0]?\d)[.]\s{0,2}[0-3]?\d");//12.30,1.05,1.5,01.5

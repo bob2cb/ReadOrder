@@ -19,7 +19,7 @@ namespace ReadWordForms
         public string tishou;
         public string year;
         public Dictionary<string,string> type;
-        public Dictionary<string, string> sizeCorrect;
+        public Dictionary<string, string> replace;
         public string[] weiqunyinshua;      
     }
 

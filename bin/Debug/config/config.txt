@@ -8,6 +8,7 @@
   "zizhi": "自制",
   "waixie": "外协",
   "yinshua": [
+  "单面",
     "双面",
     "四面",
     "彩色"
@@ -25,9 +26,10 @@
   "wufangbudai": "无纺布袋",
   "weiqun": "围裙",
   "year": "2019",
-  "sizeCorrect": {
+  "replace": {
     "CT": "0",
-    "(T": "0"
+    "\\(T": "0",
+    "〇": "0"
   },
   "weiqunyinshua": [
     "单色印刷"
